@@ -781,6 +781,17 @@ export class UIManager {
   
   loadFriendsData() { this.friendsManager.loadFriendsData(); }
   
+  showDiscoverPanel(type, category = null) {
+      if (this.discoverManager && typeof this.discoverManager.showDiscoverPanel === 'function') {
+          return this.discoverManager.showDiscoverPanel(type, category);
+      }
+      if (this.onDiscoverClick) {
+          return this.onDiscoverClick(type, category);
+      }
+      console.warn('Discover panel handler is not available.');
+      return null;
+  }
+  
   openPanel(id) { 
       const p = document.getElementById(id); 
       if(p){ 
