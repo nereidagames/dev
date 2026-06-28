@@ -108,6 +108,9 @@ class BlockStarPlanetGame {
   constructor() {
     console.log("Uruchamianie silnika gry (Performance Mode)...");
     this.isGameRunning = false; 
+    this.levelXpRequirements = [
+      0, 50, 125, 250, 400, 750, 1500, 3000, 5000, 8000, 12000, 17000, 22500, 29000, 37500, 47000, 58500, 71500, 87000, 104500, 124000, 140000, 170000, 190000, 230000, 260000, 300000, 340000, 390000, 440000, 490000, 550000, 620000, 690000, 760000, 840000, 930000, 1020000, 1120000, 1230000, 1340000, 1460000, 1590000, 1730000, 1880000, 2030000, 2190000, 2360000, 2540000, 2730000, 2930000, 3150000, 3370000, 3600000, 3850000, 4100000, 4370000, 4650000, 4940000, 5250000, 5570000, 5900000, 6250000, 6610000, 6990000, 7380000, 7790000, 8220000, 8660000, 9120000, 9590000, 10000000, 10500000, 11100000, 11600000, 12200000, 12800000, 13400000, 14000000, 14700000, 15300000, 16000000, 16700000, 17500000, 18200000, 19000000, 19800000, 20600000, 21500000, 25000000, 30000000, 40000000, 50000000, 60000000, 70000000, 80000000, 90000000, 100000000, 125000000, 150000000, 200000000, 250000000, 300000000, 350000000, 400000000, 450000000, 500000000, 550000000, 600000000, 1000000000, 1500000000, 2000000000, 2500000000, 3000000000, 5000000000, 7000000000, 10000000000, 15000000000, 20000000000, 30000000000
+    ];
 
     // Inicjalizacja rdzenia
     this.core = new OptimizedGameCore('gameContainer');
@@ -207,6 +210,21 @@ class BlockStarPlanetGame {
       }
   }
 
+  getLevelProgressFromTotalXp(totalXp) {
+      let level = 1;
+      while (level < this.levelXpRequirements.length && totalXp >= this.levelXpRequirements[level]) {
+          level += 1;
+      }
+
+      const previousThreshold = this.levelXpRequirements[level - 1] || 0;
+      const xpInCurrentLevel = Math.max(0, totalXp - previousThreshold);
+      const xpToNextLevel = level < this.levelXpRequirements.length
+          ? Math.max(0, this.levelXpRequirements[level] - previousThreshold)
+          : 0;
+
+      return { level, xp: xpInCurrentLevel, maxXp: xpToNextLevel };
+  }
+
   async startGame(user, token, thumbnail) {
       console.log("Start gry dla:", user.username);
       
@@ -231,7 +249,14 @@ class BlockStarPlanetGame {
       this.ui.checkAdminPermissions(user.username);
       this.ui.loadFriendsData();
 
-      if (user.level) this.ui.updateLevelInfo(user.level, user.xp, user.maxXp || 100);
+      if (user) {
+          const totalXp = parseInt(user.totalXp || user.total_xp || 0);
+          const progress = this.getLevelProgressFromTotalXp(totalXp);
+          const level = totalXp > 0 ? progress.level : (parseInt(user.level) || 1);
+          const xp = totalXp > 0 ? progress.xp : (parseInt(user.xp) || 0);
+          const maxXp = totalXp > 0 ? progress.maxXp : (parseInt(user.maxXp) || 100);
+          this.ui.updateLevelInfo(level, xp, maxXp || 100);
+      }
       if (user.pendingXp) this.ui.updatePendingRewards(user.pendingXp);
       if (user.ownedBlocks) this.blockManager.setOwnedBlocks(user.ownedBlocks);
       
