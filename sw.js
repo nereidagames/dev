@@ -34,7 +34,6 @@ const urlsToCache = [
   './PrefabStorage.js',
   './HyperCubePartStorage.js',
   './Config.js',
-  './UITemplates.js',
   './GameCore.js',
   './GameStateManager.js',
   './AssetLoader.js',

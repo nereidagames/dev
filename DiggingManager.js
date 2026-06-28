@@ -3,6 +3,420 @@
 import * as THREE from 'three';
 import { API_BASE_URL, STORAGE_KEYS } from './Config.js';
 
+const DIGGING_UI_HTML = `
+    <style>
+        #digging-ui-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            z-index: 10000;
+            display: none;
+            font-family: 'Titan One', cursive;
+            color: white;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        #digging-ui-container * {
+            pointer-events: auto;
+        }
+        
+        .dig-top-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.6);
+            border: 3px solid #f1c40f;
+            border-radius: 10px;
+            padding: 0 20px;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .dig-timer {
+            font-size: 28px;
+            color: #f1c40f;
+            text-shadow: 2px 2px 0 #000;
+            font-weight: bold;
+        }
+        
+        .dig-depth {
+            font-size: 28px;
+            color: #3498db;
+            text-shadow: 2px 2px 0 #000;
+            font-weight: bold;
+        }
+        
+        .dig-exit-btn {
+            width: 50px;
+            height: 50px;
+            background: #e74c3c;
+            border: 3px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 0 #c0392b;
+            transition: transform 0.1s;
+        }
+        .dig-exit-btn:active { transform: translateY(4px); box-shadow: none; }
+        
+        .dig-stats-panel {
+            position: absolute;
+            top: 80px;
+            left: 10px;
+            width: 280px;
+            background: rgba(0,0,0,0.6);
+            border: 3px solid #3498db;
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .dig-stat-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        
+        .dig-stat-icon {
+            width: 40px;
+            height: 40px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+        }
+        
+        .dig-health-icon { background-image: url('icons/health.png'); }
+        .dig-crystal-icon { background-image: url('icons/crystal.png'); }
+        
+        .dig-stat-bar {
+            flex: 1;
+            height: 25px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid white;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .dig-stat-fill {
+            height: 100%;
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .dig-stat-fill.health { background: linear-gradient(to right, #e74c3c, #c0392b); }
+        
+        .dig-stat-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            text-shadow: 1px 1px 0 #000;
+            font-weight: bold;
+        }
+        
+        .dig-resources-panel {
+            position: absolute;
+            top: 80px;
+            right: 10px;
+            width: 220px;
+            background: rgba(0,0,0,0.6);
+            border: 3px solid #f1c40f;
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .dig-resource {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .dig-zoins-icon {
+            width: 40px;
+            height: 40px;
+            background-image: url('icons/icon-coin.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+        }
+        
+        .dig-dynamite-icon {
+            width: 40px;
+            height: 40px;
+            background-image: url('icons/dynamite.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+        }
+        
+        .dig-player-count {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid rgba(255,255,255,0.3);
+            font-size: 18px;
+        }
+        
+        .dig-player-icon {
+            width: 30px;
+            height: 30px;
+            background-image: url('icons/icon-friends.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+        }
+        
+        #dig-player-count {
+            color: #f1c40f;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #000;
+        }
+        
+        .dig-upgrades-panel {
+            position: absolute;
+            bottom: 120px;
+            left: 10px;
+            width: 300px;
+            background: rgba(0,0,0,0.6);
+            border: 3px solid #9b59b6;
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .dig-upgrade-title {
+            color: #f1c40f;
+            font-size: 18px;
+            margin-bottom: 10px;
+            text-align: center;
+            text-shadow: 2px 2px 0 #000;
+        }
+        
+        .dig-upgrade-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .dig-upgrade-info {
+            flex: 1;
+        }
+        
+        .dig-upgrade-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 0 #000;
+        }
+        
+        .dig-upgrade-desc {
+            font-size: 12px;
+            opacity: 0.9;
+            color: #bdc3c7;
+        }
+        
+        .dig-upgrade-btn {
+            background: #2ecc71;
+            border: 2px solid white;
+            border-radius: 8px;
+            padding: 5px 15px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #27ae60;
+            transition: transform 0.1s;
+            font-weight: bold;
+        }
+        .dig-upgrade-btn:active { transform: translateY(3px); box-shadow: none; }
+        
+        .dig-actions-panel {
+            position: absolute;
+            bottom: 120px;
+            right: 10px;
+            width: 220px;
+            background: rgba(0,0,0,0.6);
+            border: 3px solid #e67e22;
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .dig-action-btn {
+            width: 100%;
+            height: 55px;
+            margin-bottom: 12px;
+            background: #3498db;
+            border: 2px solid white;
+            border-radius: 8px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 0 #2980b9;
+            transition: transform 0.1s;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #000;
+        }
+        .dig-action-btn:active { transform: translateY(4px); box-shadow: none; }
+        
+        .dig-action-btn.redeem { 
+            background: #f1c40f; 
+            box-shadow: 0 4px 0 #f39c12;
+            color: #2c3e50;
+        }
+        .dig-action-btn.dynamite { 
+            background: #e67e22; 
+            box-shadow: 0 4px 0 #d35400;
+        }
+        
+        .dig-mining-progress {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 30px;
+            background: rgba(0,0,0,0.7);
+            border: 3px solid #f1c40f;
+            border-radius: 15px;
+            overflow: hidden;
+            z-index: 20;
+            display: none;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .dig-mining-bar {
+            height: 100%;
+            background: linear-gradient(to right, #f1c40f, #e67e22);
+            width: 0%;
+            transition: width 0.1s;
+        }
+        
+        @media (max-width: 768px) {
+            .dig-stats-panel { width: 220px; font-size: 14px; }
+            .dig-resources-panel { width: 180px; }
+            .dig-upgrades-panel { width: 250px; }
+            .dig-actions-panel { width: 180px; }
+            .dig-mining-progress { width: 300px; }
+            .dig-timer, .dig-depth { font-size: 22px; }
+        }
+    </style>
+
+    <div id="digging-ui-container">
+        <div class="dig-top-bar">
+            <div class="dig-timer" id="dig-timer">30:00</div>
+            <div class="dig-depth" id="dig-depth">0m</div>
+            <div class="dig-exit-btn" id="dig-exit-btn">✕</div>
+        </div>
+        
+        <div class="dig-stats-panel">
+            <div class="dig-stat-row">
+                <div class="dig-stat-icon dig-health-icon"></div>
+                <div class="dig-stat-bar">
+                    <div class="dig-stat-fill health" id="dig-health-bar" style="width:100%"></div>
+                    <div class="dig-stat-text" id="dig-health-text">100/100</div>
+                </div>
+            </div>
+            <div class="dig-stat-row">
+                <div class="dig-stat-icon dig-crystal-icon"></div>
+                <div class="dig-stat-bar">
+                    <div class="dig-stat-fill" id="dig-crystal-bar" style="width:0%"></div>
+                    <div class="dig-stat-text" id="dig-crystal-text"><span id="dig-crystal-count">0</span>/<span id="dig-crystal-max">10</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dig-resources-panel">
+            <div class="dig-resource">
+                <div class="dig-zoins-icon"></div>
+                <span id="dig-zoins">0</span>
+            </div>
+            <div class="dig-resource">
+                <div class="dig-dynamite-icon"></div>
+                <span id="dig-dynamite-count">2</span>
+            </div>
+            <div class="dig-player-count">
+                <div class="dig-player-icon"></div>
+                <span id="dig-player-count">1/6</span>
+            </div>
+        </div>
+        
+        <div class="dig-upgrades-panel">
+            <div class="dig-upgrade-title">⚡ B.I.T. Upgrades ⚡</div>
+            <div class="dig-upgrade-row">
+                <div class="dig-upgrade-info">
+                    <div class="dig-upgrade-name" id="dig-laser-name">Base Laser</div>
+                    <div class="dig-upgrade-desc" id="dig-laser-power">100%</div>
+                </div>
+                <div class="dig-upgrade-btn" id="dig-upgrade-laser">↑</div>
+            </div>
+            <div class="dig-upgrade-row">
+                <div class="dig-upgrade-info">
+                    <div class="dig-upgrade-name" id="dig-storage-name">Base Storage</div>
+                    <div class="dig-upgrade-desc" id="dig-storage-capacity">10</div>
+                </div>
+                <div class="dig-upgrade-btn" id="dig-upgrade-storage">↑</div>
+            </div>
+        </div>
+        
+        <div class="dig-actions-panel">
+            <button class="dig-action-btn redeem" id="dig-redeem-btn">
+                <span>💰</span> Redeem
+            </button>
+            <button class="dig-action-btn dynamite" id="dig-dynamite-btn">
+                <span>💣</span> Dynamit
+            </button>
+        </div>
+        
+        <div class="dig-mining-progress" id="dig-mining-progress">
+            <div class="dig-mining-bar" id="dig-mining-bar"></div>
+        </div>
+    </div>
+`;
+
 // Paleta kolorów (bez tekstur!)
 const COLORS = {
     stone: 0x808080,
@@ -159,6 +573,8 @@ export class DiggingManager {
         
         // Ustaw domyślną panoramę nieba
         this.setSky(200);
+        this.renderDiggingUI();
+        this.setupDiggingUI();
     }
     
     setupLighting() {
@@ -209,7 +625,63 @@ export class DiggingManager {
         }
         // Tutaj można dodać kolejne panoramy w przyszłości
     }
-    
+
+    renderDiggingUI() {
+        const modalsLayer = document.getElementById('modals-layer');
+        if (!modalsLayer) return;
+        if (document.getElementById('digging-ui-container')) return;
+
+        modalsLayer.insertAdjacentHTML('beforeend', DIGGING_UI_HTML);
+    }
+
+    setupDiggingUI() {
+        const moveUp = document.getElementById('dig-move-up');
+        const moveDown = document.getElementById('dig-move-down');
+        const moveLeft = document.getElementById('dig-move-left');
+        const moveRight = document.getElementById('dig-move-right');
+        const moveForward = document.getElementById('dig-move-forward');
+        const moveBack = document.getElementById('dig-move-back');
+
+        if (moveUp) moveUp.onclick = () => { if (this.ui.onDiggingMove) this.ui.onDiggingMove('up'); };
+        if (moveDown) moveDown.onclick = () => { if (this.ui.onDiggingMove) this.ui.onDiggingMove('down'); };
+        if (moveLeft) moveLeft.onclick = () => { if (this.ui.onDiggingMove) this.ui.onDiggingMove('left'); };
+        if (moveRight) moveRight.onclick = () => { if (this.ui.onDiggingMove) this.ui.onDiggingMove('right'); };
+        if (moveForward) moveForward.onclick = () => { if (this.ui.onDiggingMove) this.ui.onDiggingMove('forward'); };
+        if (moveBack) moveBack.onclick = () => { if (this.ui.onDiggingMove) this.ui.onDiggingMove('back'); };
+
+        const mineBtn = document.getElementById('dig-mine-btn');
+        if (mineBtn) {
+            mineBtn.onclick = () => { if (this.ui.onDiggingMine) this.ui.onDiggingMine(); };
+            let pressTimer;
+            mineBtn.addEventListener('mousedown', () => {
+                pressTimer = setTimeout(() => {
+                    if (this.ui.onDiggingMine) this.ui.onDiggingMine('continuous');
+                }, 500);
+            });
+            mineBtn.addEventListener('mouseup', () => clearTimeout(pressTimer));
+            mineBtn.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+        }
+
+        const redeemBtn = document.getElementById('dig-redeem-btn');
+        if (redeemBtn) redeemBtn.onclick = () => { if (this.ui.onDiggingRedeem) this.ui.onDiggingRedeem(); };
+
+        const dynamiteBtn = document.getElementById('dig-dynamite-btn');
+        if (dynamiteBtn) dynamiteBtn.onclick = () => { if (this.ui.onDiggingUseDynamite) this.ui.onDiggingUseDynamite(); };
+
+        const upgradeLaserBtn = document.getElementById('dig-upgrade-laser');
+        if (upgradeLaserBtn) upgradeLaserBtn.onclick = () => { if (this.ui.onDiggingUpgrade) this.ui.onDiggingUpgrade('laser'); };
+
+        const upgradeStorageBtn = document.getElementById('dig-upgrade-storage');
+        if (upgradeStorageBtn) upgradeStorageBtn.onclick = () => { if (this.ui.onDiggingUpgrade) this.ui.onDiggingUpgrade('storage'); };
+
+        const exitBtn = document.getElementById('dig-exit-btn');
+        if (exitBtn) exitBtn.onclick = () => {
+            if (confirm("Czy na pewno chcesz zakończyć kopanie? Niewykorzystane kryształy przepadną!")) {
+                if (this.game.stateManager) this.game.stateManager.exitDiggingMode();
+            }
+        };
+    }
+
     // Funkcja do obliczania klucza chunka na podstawie pozycji bloku
     getChunkKeyFromPosition(x, y, z) {
         const cx = Math.floor(x / CHUNK_SIZE);

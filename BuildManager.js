@@ -7,6 +7,75 @@ import { WorldStorage } from './WorldStorage.js';
 import { PrefabStorage } from './PrefabStorage.js';
 import { API_BASE_URL, STORAGE_KEYS } from './Config.js';
 
+const BUILD_UI_HTML = `
+    <!-- UI BUILDERA -->
+    <div class="build-top-left">
+        <div id="build-exit-btn-new" class="btn-bsp-back"></div>
+        <div class="btn-bsp-green" style="display:none;" id="build-chat-dummy">...</div>
+        <div id="build-save-btn-new" class="btn-bsp-green">Zapisz</div>
+    </div>
+
+    <div class="build-sidebar-right">
+        <div id="build-mode-toggle-new" class="btn-mode-toggle">Tryb: Łatwy</div>
+        <div id="build-tools-menu-btn" class="btn-tool-main">
+            <div class="icon-finger">👆</div>
+        </div>
+        <div class="btn-undo-redo" style="margin-top:10px;">↩️</div>
+        <div class="btn-undo-redo">↪️</div>
+    </div>
+
+    <div id="build-rotate-zone"></div>
+
+    <div class="build-bottom-bar">
+        <div id="build-add-btn-new" class="btn-add-block"></div>
+        <div id="build-hotbar-container" class="hotbar-container"></div>
+    </div>
+
+    <div id="tools-modal">
+        <div class="tools-section">
+            <div class="tools-section-title">Narzędzia Łatwe</div>
+            <div class="tools-grid">
+                <div class="tool-icon-btn" id="tool-btn-single" title="Pojedynczy"><img src="icons/tool-hand.png" onerror="this.onerror=null; this.src='icons/icon-build.png'" class="tool-icon-img"></div>
+                <div class="tool-icon-btn" id="tool-btn-eraser" title="Gumka"><img src="icons/tool-eraser.png" onerror="this.onerror=null; this.src='icons/icon-back.png'" class="tool-icon-img"></div>
+                <div class="tool-icon-btn"><img src="icons/tool-bucket.png" onerror="this.onerror=null; this.src='icons/icon-shop.png'" class="tool-icon-img"></div>
+                <div class="tool-icon-btn"><img src="icons/tool-swap.png" onerror="this.onerror=null; this.src='icons/icon-restart.png'" class="tool-icon-img"></div>
+                <div class="tool-icon-btn"><img src="icons/tool-grid.png" onerror="this.onerror=null; this.src='icons/icon-smallworld.png'" class="tool-icon-img"></div>
+                <div class="tool-icon-btn"><img src="icons/tool-trash.png" onerror="this.onerror=null; this.src='icons/icon-back.png'" class="tool-icon-img"></div>
+            </div>
+        </div>
+        <div class="tools-section">
+            <div class="tools-section-title">Narzędzia Profesjonalne</div>
+            <div class="tools-grid">
+                 <div class="tool-icon-btn"><img src="icons/tool-mound.png" onerror="this.onerror=null; this.src='icons/icon-newworld.png'" class="tool-icon-img"></div>
+                 <div class="tool-icon-btn"><img src="icons/tool-pencil.png" onerror="this.onerror=null; this.src='icons/icon-build.png'" class="tool-icon-img"></div>
+                 <div class="tool-icon-btn"><img src="icons/tool-pipette.png" onerror="this.onerror=null; this.src='icons/icon-more.png'" class="tool-icon-img"></div>
+                 <div class="tool-icon-btn" id="tool-btn-line" title="Linia"><img src="icons/tool-line.png" onerror="this.onerror=null; this.src='icons/icon-jump.png'" class="tool-icon-img"></div>
+                 <div class="tool-icon-btn"><img src="icons/tool-rotate.png" onerror="this.onerror=null; this.src='icons/icon-restart.png'" class="tool-icon-img"></div>
+                 <div class="tool-icon-btn"><img src="icons/tool-box.png" onerror="this.onerror=null; this.src='icons/icon-newprefab.png'" class="tool-icon-img"></div>
+            </div>
+        </div>
+        <div class="tools-section">
+            <div class="tools-section-title" style="color:#f1c40f;">Narzędzia VIP</div>
+            <div class="tools-grid">
+                 <div class="tool-icon-btn vip"><img src="icons/tool-tnt.png" onerror="this.onerror=null; this.src='icons/alert.png'" class="tool-icon-img"></div>
+                 <div class="tool-icon-btn vip"><img src="icons/tool-fog.png" onerror="this.onerror=null; this.src='icons/icon-discover.png'" class="tool-icon-img"></div>
+                 <div class="tool-icon-btn vip"><img src="icons/tool-wire.png" onerror="this.onerror=null; this.src='icons/icon-newhypercubepart.png'" class="tool-icon-img"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="block-selection-panel">
+        <div class="friends-tabs">
+            <div class="friends-tab active" id="build-tab-blocks">Bloki</div>
+            <div class="friends-tab" id="build-tab-addons">Dodatki</div>
+        </div>
+        <div id="build-block-list"></div>
+    </div>
+    <div id="prefab-selection-panel"></div>
+    <div id="part-selection-panel"></div>
+    <div id="add-choice-panel" class="panel-modal"><div class="panel-content"><h2>Dodaj</h2><div class="panel-list"><div id="add-choice-blocks" class="panel-item">Bloki</div><div id="add-choice-prefabs" class="panel-item">Prefabrykaty</div><div id="add-choice-parts" class="panel-item">Części</div></div><button id="add-choice-close" class="panel-close-button">Anuluj</button></div></div>
+`;
+
 export class BuildManager {
   constructor(game, loadingManager, blockManager) {
     this.game = game;
@@ -61,6 +130,9 @@ export class BuildManager {
     this.onTouchStart = this.onTouchStart.bind(this);
     this.onTouchEnd = this.onTouchEnd.bind(this);
     this.onTouchMove = this.onTouchMove.bind(this);
+
+    this.buildUIRendered = false;
+    this.renderBuildUI();
   }
 
   onContextMenu(event) { event.preventDefault(); }
@@ -76,6 +148,15 @@ export class BuildManager {
         this.materials[blockType.texturePath] = new THREE.MeshBasicMaterial({ map: texture });
       }
     });
+  }
+
+  renderBuildUI() {
+    const buildContainer = document.getElementById('build-ui-container');
+    if (!buildContainer || this.buildUIRendered) return;
+
+    buildContainer.innerHTML = BUILD_UI_HTML;
+    buildContainer.style.display = 'none';
+    this.buildUIRendered = true;
   }
 
   // NOWA METODA: Ustawianie panoramy nieba w builderze

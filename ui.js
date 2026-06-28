@@ -7,8 +7,90 @@ import { WorldStorage } from './WorldStorage.js';
 import { PrefabStorage } from './PrefabStorage.js';
 import { HyperCubePartStorage } from './HyperCubePartStorage.js';
 
-import { HUD_HTML, BUILD_UI_HTML, DIGGING_UI_HTML, MODALS_HTML } from './UITemplates.js';
 import { STORAGE_KEYS } from './Config.js';
+
+const HUD_HTML = `
+    <div class="top-bar ui-element">
+        <div id="player-avatar-button" class="top-bar-item">
+            <div class="player-avatar">👤</div>
+            <div class="player-name text-outline" id="player-name-display">player</div>
+        </div>
+        
+        <div class="top-bar-item">
+            <div class="player-avatar" style="background-image: url('icons/logo-poczta.png'); background-size: 90%; background-position: center; background-repeat: no-repeat; background-color: transparent;"></div>
+            <div class="player-name text-outline">Poczta</div>
+        </div>
+        
+        <div id="btn-friends-open" class="top-bar-item">
+            <div class="player-avatar btn-friends" style="background-image: url('icons/icon-friends.png'); background-size: 90%; background-position: center; background-repeat: no-repeat; background-color: transparent;"></div>
+            <div class="player-name text-outline">Przyjaciele</div>
+        </div>
+        
+        <div id="active-friends-container"></div>
+    </div>
+    
+    <div id="parkour-timer" class="text-outline">00:00.00</div>
+    <div class="chat-container ui-element"><div class="chat-area"></div><div id="chat-toggle-button">💬</div></div>
+    <form id="chat-form" class="ui-element"><input type="text" id="chat-input-field" placeholder="Napisz coś..."><button type="submit" id="chat-send-btn">Wyślij</button></form>
+    
+    <div class="right-ui ui-element">
+        <div class="game-buttons">
+            <button class="game-btn btn-zagraj"></button>
+            <button class="game-btn btn-buduj"></button>
+            <button class="game-btn btn-kup"></button>
+            <button class="game-btn btn-odkryj"></button>
+            <button class="game-btn btn-wiecej"></button>
+        </div>
+        <div id="level-container">
+            <div class="level-star"><div id="level-value" class="text-outline">1</div></div>
+            <div class="level-bar-background"><div id="level-bar-fill"></div><div id="level-text" class="text-outline">0/50</div></div>
+            <div class="level-plus-btn">+</div>
+        </div>
+        <div id="coin-counter"><div class="coin-icon"></div><div class="coin-bar-background"><div id="coin-value" class="text-outline">0</div></div><div id="coin-add-btn" class="ui-element">+</div></div>
+    </div>
+    <div id="mobile-game-controls"><div id="joystick-zone"></div><button id="jump-button"></button></div>
+`;
+
+const GLOBAL_MODALS_HTML = `
+    <style>
+        .nav-grid-container { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: auto; gap: 15px; justify-content: center; width: 100%; padding: 20px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.1s; position: relative; }
+        .nav-item:active { transform: scale(0.95); }
+        .nav-btn-box { width: 110px; height: 110px; background-image: url('icons/NavigationButton.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; position: relative; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); padding-top: 15px; }
+        .nav-btn-box-green { width: 110px; height: 110px; background-image: url('icons/NavigationButtonGreen.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; position: relative; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); padding-top: 15px; }
+        .nav-icon { width: 55%; height: 55%; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 1; }
+        .nav-label { position: absolute; bottom: 12px; left: 0; width: 100%; color: white; font-size: 11px; font-family: 'Titan One', cursive; text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000; text-align: center; z-index: 2; pointer-events: none; line-height: 1; }
+        .nav-badge { position: absolute; top: -5px; right: -5px; background-color: #e74c3c; color: white; border: 2px solid white; border-radius: 50%; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 10; }
+        
+        #more-options-panel .panel-content, #play-choice-panel .panel-content, #build-choice-panel .panel-content { background: rgba(0,0,0,0.6) !important; border: none !important; box-shadow: none !important; width: 95vw !important; max-width: 800px !important; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Styl dla okna wpisywania nazwy */
+        #name-input-panel-container { background: #3498db; border: 4px solid white; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 15px; width: 300px; align-items: center; box-shadow: 0 10px 20px rgba(0,0,0,0.5); pointer-events: auto; }
+        #name-input-field { width: 100%; height: 40px; border-radius: 8px; border: none; padding: 0 10px; font-family: 'Titan One', cursive; font-size: 16px; }
+        #name-submit-btn { padding: 10px 30px; background: #2ecc71; color: white; border: 2px solid white; border-radius: 8px; cursor: pointer; font-family: 'Titan One', cursive; font-size: 18px; }
+
+        @media (max-width: 600px) {
+            .nav-grid-container { gap: 10px; grid-template-columns: repeat(3, 1fr); }
+            .nav-btn-box, .nav-btn-box-green { width: 90px; height: 90px; }
+            .nav-label { font-size: 9px; bottom: 10px; }
+        }
+    </style>
+
+    <div id="explore-exit-button"></div>
+    
+    <!-- PANELE GLOBALNE -->
+    <div id="world-size-panel" class="panel-modal"><div class="panel-content"><h2>Rozmiar</h2><div class="build-choice-grid"><div id="size-choice-new-small" class="build-choice-item"><div class="build-choice-icon" style="background-image: url('icons/icon-smallworld.png');"></div><span>Mały</span></div><div id="size-choice-new-medium" class="build-choice-item"><div class="build-choice-icon" style="background-image: url('icons/icon-mediumworld.png');"></div><span>Średni</span></div><div id="size-choice-new-large" class="build-choice-item"><div class="build-choice-icon" style="background-image: url('icons/icon-bigworld.png');"></div><span>Duży</span></div></div><button class="panel-close-button">Anuluj</button></div></div>
+    <div id="player-preview-panel" class="panel-modal" style="display:none;"><div class="panel-content"><h2>Podgląd</h2><div id="player-preview-renderer-container"></div><button class="panel-close-button">Zamknij</button></div></div>
+    
+    <!-- OKNO WPISYWANIA NAZWY -->
+    <div id="name-input-panel" class="panel-modal" style="display:none;">
+        <div id="name-input-panel-container">
+            <h2 class="text-outline">Wpisz nazwę</h2>
+            <input id="name-input-field" placeholder="Wpisz tekst..." maxlength="20">
+            <button id="name-submit-btn">OK</button>
+        </div>
+    </div>
+`;
 
 // Import managerów
 import { FriendsManager } from './FriendsManager.js';
@@ -112,7 +194,6 @@ export class UIManager {
         
         this.setupButtonHandlers();
         this.setupChatSystem(); 
-        this.setupDiggingUI();
         this.loadFriendsData(); 
         
         console.log("UI Inicjalizacja zakończona sukcesem.");
@@ -160,112 +241,6 @@ export class UIManager {
   }
   
   // --- UI KOPANIA ---
-  setupDiggingUI() {
-    const moveUp = document.getElementById('dig-move-up');
-    const moveDown = document.getElementById('dig-move-down');
-    const moveLeft = document.getElementById('dig-move-left');
-    const moveRight = document.getElementById('dig-move-right');
-    const moveForward = document.getElementById('dig-move-forward');
-    const moveBack = document.getElementById('dig-move-back');
-    
-    if (moveUp) moveUp.onclick = () => { if (this.onDiggingMove) this.onDiggingMove('up'); };
-    if (moveDown) moveDown.onclick = () => { if (this.onDiggingMove) this.onDiggingMove('down'); };
-    if (moveLeft) moveLeft.onclick = () => { if (this.onDiggingMove) this.onDiggingMove('left'); };
-    if (moveRight) moveRight.onclick = () => { if (this.onDiggingMove) this.onDiggingMove('right'); };
-    if (moveForward) moveForward.onclick = () => { if (this.onDiggingMove) this.onDiggingMove('forward'); };
-    if (moveBack) moveBack.onclick = () => { if (this.onDiggingMove) this.onDiggingMove('back'); };
-    
-    const mineBtn = document.getElementById('dig-mine-btn');
-    if (mineBtn) {
-        mineBtn.onclick = () => { if (this.onDiggingMine) this.onDiggingMine(); };
-        let pressTimer;
-        mineBtn.addEventListener('mousedown', () => {
-            pressTimer = setTimeout(() => {
-                if (this.onDiggingMine) this.onDiggingMine('continuous');
-            }, 500);
-        });
-        mineBtn.addEventListener('mouseup', () => clearTimeout(pressTimer));
-        mineBtn.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-    }
-    
-    const redeemBtn = document.getElementById('dig-redeem-btn');
-    if (redeemBtn) redeemBtn.onclick = () => { if (this.onDiggingRedeem) this.onDiggingRedeem(); };
-    
-    const dynamiteBtn = document.getElementById('dig-dynamite-btn');
-    if (dynamiteBtn) dynamiteBtn.onclick = () => { if (this.onDiggingUseDynamite) this.onDiggingUseDynamite(); };
-    
-    const upgradeLaserBtn = document.getElementById('dig-upgrade-laser');
-    if (upgradeLaserBtn) upgradeLaserBtn.onclick = () => { if (this.onDiggingUpgrade) this.onDiggingUpgrade('laser'); };
-    
-    const upgradeStorageBtn = document.getElementById('dig-upgrade-storage');
-    if (upgradeStorageBtn) upgradeStorageBtn.onclick = () => { if (this.onDiggingUpgrade) this.onDiggingUpgrade('storage'); };
-    
-    const exitBtn = document.getElementById('dig-exit-btn');
-    if (exitBtn) exitBtn.onclick = () => { 
-        if (confirm("Czy na pewno chcesz zakończyć kopanie? Niewykorzystane kryształy przepadną!")) {
-            if (this.onExitParkour) this.onExitParkour();
-        }
-    };
-  }
-  
-  updateDiggingUI(state) {
-    const timerEl = document.getElementById('dig-timer');
-    if (timerEl && state.timeRemaining) timerEl.textContent = state.timeRemaining;
-    
-    const depthEl = document.getElementById('dig-depth');
-    if (depthEl) depthEl.textContent = `${Math.abs(state.depth)}m`;
-    
-    const healthBar = document.getElementById('dig-health-bar');
-    const healthText = document.getElementById('dig-health-text');
-    if (healthBar && healthText) {
-        const percent = (state.health / state.maxHealth) * 100;
-        healthBar.style.width = `${percent}%`;
-        healthText.textContent = `${state.health}/${state.maxHealth}`;
-    }
-    
-    const crystalCount = document.getElementById('dig-crystal-count');
-    const crystalMax = document.getElementById('dig-crystal-max');
-    const crystalBar = document.getElementById('dig-crystal-bar');
-    if (crystalCount && crystalMax && crystalBar) {
-        crystalCount.textContent = state.crystals;
-        crystalMax.textContent = state.maxCapacity;
-        const percent = (state.crystals / state.maxCapacity) * 100;
-        crystalBar.style.width = `${percent}%`;
-    }
-    
-    const zoinsEl = document.getElementById('dig-zoins');
-    if (zoinsEl) zoinsEl.textContent = state.zoins;
-    
-    const dynamiteEl = document.getElementById('dig-dynamite-count');
-    if (dynamiteEl) dynamiteEl.textContent = state.dynamite;
-    
-    const laserName = document.getElementById('dig-laser-name');
-    const laserPower = document.getElementById('dig-laser-power');
-    if (laserName && laserPower) {
-        laserName.textContent = state.laserName;
-        const powerPercent = Math.round(state.laserPower * 100);
-        laserPower.textContent = `${powerPercent}%`;
-    }
-    
-    const storageName = document.getElementById('dig-storage-name');
-    const storageCapacity = document.getElementById('dig-storage-capacity');
-    if (storageName && storageCapacity) {
-        storageName.textContent = state.storageName;
-        storageCapacity.textContent = state.maxCapacity;
-    }
-    
-    const miningProgress = document.getElementById('dig-mining-progress');
-    const miningBar = document.getElementById('dig-mining-bar');
-    if (miningProgress && miningBar) {
-        if (state.miningProgress > 0) {
-            miningProgress.style.display = 'block';
-            miningBar.style.width = `${state.miningProgress * 100}%`;
-        } else {
-            miningProgress.style.display = 'none';
-        }
-    }
-  }
-  
   showDiggingMode() {
     document.getElementById('digging-ui-container').style.display = 'block';
     const overlay = document.querySelector('.ui-overlay');
@@ -411,17 +386,14 @@ export class UIManager {
   }
   
   renderUI() {
-      const uiLayer = document.getElementById('ui-layer'); 
-      const buildContainer = document.getElementById('build-ui-container');
+      const uiLayer = document.getElementById('ui-layer');
       const modalsLayer = document.getElementById('modals-layer');
 
       // Zostawiamy authLayer w spokoju, zarządza nim teraz IntroManager!
       
       if (uiLayer) uiLayer.innerHTML = `<div class="ui-overlay">${HUD_HTML}</div>`;
-      if (buildContainer) buildContainer.innerHTML = BUILD_UI_HTML;
-      
       if (modalsLayer) {
-          modalsLayer.innerHTML = MODALS_HTML + DIGGING_UI_HTML;
+          modalsLayer.innerHTML = GLOBAL_MODALS_HTML;
       }
   }
   
