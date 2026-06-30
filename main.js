@@ -246,10 +246,6 @@ class BlockStarPlanetGame {
       this.audioManager.stopLoginMusic();
       this.audioManager.playNexusMusic();
 
-      if (this.intro) {
-          this.intro.dispose();
-      }
-      
       while(this.scene.children.length > 0){ 
           this.scene.remove(this.scene.children[0]); 
       }
@@ -295,6 +291,10 @@ class BlockStarPlanetGame {
       }
 
       document.querySelector('.ui-overlay').style.display = 'block';
+
+      if (this.intro) {
+          this.intro.dispose();
+      }
 
       this.sceneManager = new SceneManager(this.scene, this.loader.getLoadingManager(), this.blockManager);
       try { await this.sceneManager.initialize(); } catch(e) {}
