@@ -5,6 +5,8 @@ import { STARTER_SKINS } from './StarterSkins.js';
 import { createBaseCharacter } from './character.js';
 import { API_BASE_URL, STORAGE_KEYS } from './Config.js';
 import { AccountService } from './services/AccountService.js';
+import { initializeComponentStyles } from './services/UIComponentsLibrary.js';
+import { ENHANCED_AUTH_HTML } from './services/EnhancedAuthTemplate.js';
 
 // Szablon HTML dla ekranu logowania
 const AUTH_HTML = `
@@ -315,9 +317,11 @@ export class IntroManager {
     }
     
     injectAuthHTML() {
+        initializeComponentStyles(); // Initialize global component styles
+        
         const authLayer = document.getElementById('auth-layer');
         if (authLayer && authLayer.innerHTML.trim() === '') {
-            authLayer.innerHTML = AUTH_HTML;
+            authLayer.innerHTML = ENHANCED_AUTH_HTML;
         } else if (!authLayer) {
             const newAuthLayer = document.createElement('div');
             newAuthLayer.id = 'auth-layer';
@@ -325,7 +329,7 @@ export class IntroManager {
             newAuthLayer.style.position = 'relative';
             newAuthLayer.style.zIndex = '99998';
             document.body.appendChild(newAuthLayer);
-            newAuthLayer.innerHTML = AUTH_HTML;
+            newAuthLayer.innerHTML = ENHANCED_AUTH_HTML;
         }
     }
 
@@ -614,13 +618,71 @@ export class IntroManager {
     }
 
     showScreen(screenName) {
-        if(this.screens.welcome) this.screens.welcome.style.display = 'none';
-        if(this.screens.login) this.screens.login.style.display = 'none';
-        if(this.screens.register) this.screens.register.style.display = 'none';
+        // Dodaj style animacji, jeśli nie istnieje
+        if (!document.getElementById('bsp-screen-animations')) {
+            const style = document.createElement('style');
+            style.id = 'bsp-screen-animations';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from { opacity: 0; transform: translateX(100px); }
+                    to { opacity: 1; transform: translateX(0); }
+                }
+                @keyframes slideOutLeft {
+                    from { opacity: 1; transform: translateX(0); }
+                    to { opacity: 0; transform: translateX(-100px); }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+                
+                .screen-transition-out {
+                    animation: fadeOut 0.3s ease-out forwards !important;
+                }
+                .screen-transition-in {
+                    animation: fadeIn 0.4s ease-in forwards !important;
+                }
+                
+                #bsp-login-modal, #bsp-register-screen {
+                    transition: all 0.3s ease;
+                }
+            `;
+            document.head.appendChild(style);
+        }
 
-        if (screenName === 'welcome' && this.screens.welcome) this.screens.welcome.style.display = 'flex';
-        if (screenName === 'login' && this.screens.login) this.screens.login.style.display = 'flex';
-        if (screenName === 'register' && this.screens.register) this.screens.register.style.display = 'block';
+        // Hide all screens
+        Object.values(this.screens).forEach(screen => {
+            if (screen) {
+                screen.classList.add('screen-transition-out');
+                setTimeout(() => {
+                    screen.style.display = 'none';
+                    screen.classList.remove('screen-transition-out');
+                }, 300);
+            }
+        });
+
+        // Show target screen with animation
+        setTimeout(() => {
+            if (screenName === 'welcome' && this.screens.welcome) {
+                this.screens.welcome.style.display = 'flex';
+                this.screens.welcome.classList.add('screen-transition-in');
+                setTimeout(() => this.screens.welcome?.classList.remove('screen-transition-in'), 400);
+            }
+            if (screenName === 'login' && this.screens.login) {
+                this.screens.login.style.display = 'flex';
+                this.screens.login.classList.add('screen-transition-in');
+                setTimeout(() => this.screens.login?.classList.remove('screen-transition-in'), 400);
+            }
+            if (screenName === 'register' && this.screens.register) {
+                this.screens.register.style.display = 'block';
+                this.screens.register.classList.add('screen-transition-in');
+                setTimeout(() => this.screens.register?.classList.remove('screen-transition-in'), 400);
+            }
+        }, 300);
     }
 
     cycleSkin(dir) {
@@ -698,13 +760,27 @@ export class IntroManager {
             if (result.success) {
                 console.log('[IntroManager] handleLogin: success, fetching user data');
                 this.dispose();
-                // Pobierz dane użytkownika z serwera
-                const userRes = await fetch(`${API_BASE_URL}/api/user/me`, {
-                    headers: { 'Authorization': `Bearer ${result.token}` }
-                });
-                const userData = await userRes.json();
+                let userData = null;
+                let thumbnail = null;
+                try {
+                    const userRes = await fetch(`${API_BASE_URL}/api/user/me`, {
+                        headers: { 'Authorization': `Bearer ${result.token}` }
+                    });
+                    if (userRes.ok) {
+                        const payload = await userRes.json().catch(() => null);
+                        userData = payload?.user || payload;
+                        thumbnail = payload?.thumbnail || null;
+                    }
+                } catch (e) {
+                    console.warn('[IntroManager] /api/user/me failed, using fallback profile:', e.message || e);
+                }
+
+                if (!userData) {
+                    userData = { id: result.userId, username };
+                }
+
                 console.log('[IntroManager] handleLogin: user data loaded, calling onLoginSuccess');
-                this.onLoginSuccess(userData, result.token, userData.thumbnail);
+                this.onLoginSuccess(userData, result.token, thumbnail);
             } else {
                 console.warn('[IntroManager] handleLogin: login failed:', result.error);
                 if (msg) msg.textContent = result.error || "Błąd logowania";
