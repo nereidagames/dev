@@ -11,6 +11,7 @@ import { AuthManager } from './AuthManager.js';
 import { AssetLoader } from './AssetLoader.js';
 import { GameStateManager } from './GameStateManager.js';
 import { IntroManager } from './IntroManager.js';
+import { CatalogManager } from './CatalogManager.js';
 
 import { BlockManager } from './BlockManager.js';
 import { UIManager } from './ui.js';
@@ -129,6 +130,7 @@ class BlockStarPlanetGame {
 
     this.stateManager = new GameStateManager(this.core, this.ui, this.audioManager);
     this.auth = new AuthManager(this.startGame.bind(this));
+    this.catalogManager = new CatalogManager();
     this.intro = new IntroManager(this.core, this.ui, this.startGame.bind(this), this.audioManager);
     this.loader = new AssetLoader(this.blockManager, this.onAssetsLoaded.bind(this));
 
@@ -248,6 +250,13 @@ class BlockStarPlanetGame {
       if (thumbnail) this.ui.updatePlayerAvatar(thumbnail);
       this.ui.checkAdminPermissions(user.username);
       this.ui.loadFriendsData();
+
+      // Załaduj katalog w tle
+      try {
+          await this.catalogManager.initialize();
+      } catch (error) {
+          console.error('Failed to load catalog:', error);
+      }
 
       if (user) {
           const totalXp = parseInt(user.totalXp || user.total_xp || 0);
