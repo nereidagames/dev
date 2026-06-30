@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'hypercubesplanet-dev-v9';
+const CACHE_NAME = 'hypercubesplanet-dev-v10';
 
 const urlsToCache = [
   './',
@@ -78,7 +78,6 @@ const urlsToCache = [
   'icons/sciana.png',
   'icons/arrow-left.png',
   'icons/arrow-right.png',
-  'icons/vip.png',
   'icons/vip_badge.png',
   'icons/szukaj.png',
   'icons/wtymswiecie.png',

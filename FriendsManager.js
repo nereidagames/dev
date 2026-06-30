@@ -310,12 +310,14 @@ export class FriendsManager {
         try {
             const r = await fetch(`${API_BASE_URL}/api/friends`, { headers: { 'Authorization': `Bearer ${t}` } });
             if (r.ok) {
-                const d = await r.json();
-                this.friendsList = d.friends; 
-                this.renderFriendsUI(d.friends, d.requests);
+                const d = await r.json().catch(() => ({ friends: [], requests: [] }));
+                this.friendsList = d.friends || []; 
+                this.renderFriendsUI(this.friendsList, d.requests || []);
+            } else {
+                console.warn('Nie udało się pobrać znajomych, status:', r.status);
             }
         } catch (e) {
-            console.error("Błąd pobierania przyjaciół:", e);
+            console.warn('Błąd pobierania przyjaciół:', e.message || e);
         }
     }
 

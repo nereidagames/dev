@@ -47,7 +47,7 @@ export class AccountService {
   async login(username, password) {
     try {
       console.log('[AccountService] Logging in user:', username);
-      const response = await fetch(`${API_BASE}/api/auth/login`, {
+      const response = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -57,9 +57,14 @@ export class AccountService {
         throw new Error(err.message || 'Login failed');
       }
       const data = await response.json();
-      this.saveTokenToStorage(data.token, data.userId);
-      console.log('[AccountService] Login successful for user:', data.userId);
-      return { success: true, userId: data.userId, token: data.token };
+      const token = data.token;
+      const userId = data.user?.id || data.userId;
+      if (token && userId) {
+        this.saveTokenToStorage(token, userId);
+        console.log('[AccountService] Login successful for user:', userId);
+        return { success: true, userId, token };
+      }
+      throw new Error('Nie otrzymano tokena lub id użytkownika');
     } catch (error) {
       console.error('[AccountService] login error:', error);
       return { success: false, error: error.message };
@@ -69,7 +74,7 @@ export class AccountService {
   async register(username, password) {
     try {
       console.log('[AccountService] Registering user:', username);
-      const response = await fetch(`${API_BASE}/api/auth/register`, {
+      const response = await fetch(`${API_BASE}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -79,9 +84,14 @@ export class AccountService {
         throw new Error(err.message || 'Register failed');
       }
       const data = await response.json();
-      this.saveTokenToStorage(data.token, data.userId);
-      console.log('[AccountService] Registration successful for user:', data.userId);
-      return { success: true, userId: data.userId, token: data.token };
+      const token = data.token;
+      const userId = data.user?.id || data.userId;
+      if (token && userId) {
+        this.saveTokenToStorage(token, userId);
+        console.log('[AccountService] Registration successful for user:', userId);
+        return { success: true, userId, token };
+      }
+      return { success: true, userId: null, token: null };
     } catch (error) {
       console.error('[AccountService] register error:', error);
       return { success: false, error: error.message };

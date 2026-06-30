@@ -187,7 +187,7 @@ const TEMPLATE = `
                     <div class="shop-nav-item" id="btn-shop-blocks"><div class="shop-btn-box blue-style"><img src="icons/Blocks.png" class="shop-icon" onerror="this.src='icons/icon-build.png'"><span class="shop-label">Klocki</span></div></div>
                     <div class="shop-nav-item" id="btn-shop-weapon"><div class="shop-btn-box blue-style"><img src="icons/Weapons.png" class="shop-icon" onerror="this.src='icons/icon-more.png'"><span class="shop-label">Broń</span></div></div>
                     <div class="shop-nav-item" id="btn-shop-legs"><div class="shop-btn-box blue-style"><img src="icons/Legs.png" class="shop-icon" onerror="this.src='icons/icon-jump.png'"><span class="shop-label">Przedmioty dolne</span></div></div>
-                    <div class="shop-nav-item" id="btn-shop-vip"><div class="shop-btn-box blue-style"><img src="icons/vip.png" class="shop-icon" onerror="this.src='icons/vip_badge.png'"><span class="shop-label">VIP</span></div></div>
+                    <div class="shop-nav-item" id="btn-shop-vip"><div class="shop-btn-box blue-style"><img src="icons/favicon.png" class="shop-icon" onerror="this.src='icons/vip_badge.png'"><span class="shop-label">VIP</span></div></div>
                     <div class="shop-nav-item" id="btn-shop-pets"><div class="shop-btn-box blue-style"><img src="icons/Pets.png" class="shop-icon" onerror="this.src='icons/icon-friends.png'"><span class="shop-label">Zwierzaki</span></div></div>
 
                     <!-- RZĄD 2 -->
