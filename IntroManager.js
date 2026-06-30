@@ -326,8 +326,12 @@ export class IntroManager {
             const newAuthLayer = document.createElement('div');
             newAuthLayer.id = 'auth-layer';
             newAuthLayer.style.display = 'block';
-            newAuthLayer.style.position = 'relative';
-            newAuthLayer.style.zIndex = '99998';
+            newAuthLayer.style.position = 'fixed';
+            newAuthLayer.style.top = '0';
+            newAuthLayer.style.left = '0';
+            newAuthLayer.style.width = '100%';
+            newAuthLayer.style.height = '100%';
+            newAuthLayer.style.zIndex = '99997';
             document.body.appendChild(newAuthLayer);
             newAuthLayer.innerHTML = ENHANCED_AUTH_HTML;
         }

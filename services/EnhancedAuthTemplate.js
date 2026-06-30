@@ -431,8 +431,8 @@ export const ENHANCED_AUTH_HTML = `
     <div id="bsp-welcome-screen">
         <div class="bsp-top-header bsp-interactive">Witaj na <span>HyperCubesPlanet</span></div>
         <div class="bsp-right-buttons">
-            <div id="btn-show-register" class="bsp-big-btn btn-new-user">Nowy<br>Użytkownik</div>
-            <div id="btn-show-login" class="bsp-big-btn btn-login-big">Zaloguj</div>
+            <div id="btn-show-register" class="bsp-big-btn btn-new-user bsp-interactive">Nowy<br>Użytkownik</div>
+            <div id="btn-show-login" class="bsp-big-btn btn-login-big bsp-interactive">Zaloguj</div>
         </div>
         <div class="bsp-bottom-bar">
             <div class="bsp-left-icon bsp-interactive">
