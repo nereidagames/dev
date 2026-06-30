@@ -46,6 +46,7 @@ export class AccountService {
 
   async login(username, password) {
     try {
+      console.log('[AccountService] Logging in user:', username);
       const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -57,6 +58,7 @@ export class AccountService {
       }
       const data = await response.json();
       this.saveTokenToStorage(data.token, data.userId);
+      console.log('[AccountService] Login successful for user:', data.userId);
       return { success: true, userId: data.userId, token: data.token };
     } catch (error) {
       console.error('[AccountService] login error:', error);
@@ -66,6 +68,7 @@ export class AccountService {
 
   async register(username, password) {
     try {
+      console.log('[AccountService] Registering user:', username);
       const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,6 +80,7 @@ export class AccountService {
       }
       const data = await response.json();
       this.saveTokenToStorage(data.token, data.userId);
+      console.log('[AccountService] Registration successful for user:', data.userId);
       return { success: true, userId: data.userId, token: data.token };
     } catch (error) {
       console.error('[AccountService] register error:', error);

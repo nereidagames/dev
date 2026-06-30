@@ -49,21 +49,21 @@ export class CatalogService {
     
     // Zwróć cache jeśli świeży
     if (this.cache && !forceRefresh && (now - this.cacheTime) < this.cacheTTL) {
-      console.log('[CatalogService] Returning cached catalog');
+      console.log('[CatalogService] Returning cached catalog, items:', this.cache.items?.length || 0);
       return this.cache;
     }
 
-    console.log('[CatalogService] Fetching fresh catalog');
+    console.log('[CatalogService] Fetching fresh catalog (forceRefresh=%s)', forceRefresh);
     
     // Spróbuj JSON najpierw
     try {
       const data = await this.fetchJSON();
       this.cache = data;
       this.cacheTime = now;
-      console.log('[CatalogService] Successfully loaded JSON catalog');
+      console.log('[CatalogService] Successfully loaded JSON catalog with', data.items?.length || 0, 'items');
       return data;
     } catch (jsonError) {
-      console.warn('[CatalogService] JSON fetch failed, trying binary...');
+      console.warn('[CatalogService] JSON fetch failed, trying binary...', jsonError.message);
     }
 
     // Fallback: spróbuj binary
@@ -71,10 +71,10 @@ export class CatalogService {
       const data = await this.fetchBinary();
       this.cache = data;
       this.cacheTime = now;
-      console.log('[CatalogService] Successfully loaded binary catalog');
+      console.log('[CatalogService] Successfully loaded binary catalog with', data.items?.length || 0, 'items');
       return data;
     } catch (binError) {
-      console.error('[CatalogService] Both JSON and binary failed');
+      console.error('[CatalogService] Both JSON and binary failed:', binError.message);
       throw new Error('Catalog fetch failed: ' + binError.message);
     }
   }

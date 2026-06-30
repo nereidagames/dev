@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { STARTER_SKINS } from './StarterSkins.js';
 import { createBaseCharacter } from './character.js';
 import { API_BASE_URL, STORAGE_KEYS } from './Config.js';
+import { AccountService } from './services/AccountService.js';
 
 // Szablon HTML dla ekranu logowania
 const AUTH_HTML = `
@@ -280,6 +281,7 @@ export class IntroManager {
         this.ui = uiManager;
         this.onLoginSuccess = onLoginSuccess; 
         this.audioManager = audioManager;
+        this.accountService = new AccountService();
 
         this.scene = gameCore.scene;
         this.camera = gameCore.camera;
@@ -691,21 +693,24 @@ export class IntroManager {
         if (!username || !password) return;
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await res.json();
-            if (res.ok) {
+            console.log('[IntroManager] handleLogin: calling AccountService.login()');
+            const result = await this.accountService.login(username, password);
+            if (result.success) {
+                console.log('[IntroManager] handleLogin: success, fetching user data');
                 this.dispose();
-                this.onLoginSuccess(data.user, data.token, data.thumbnail);
+                // Pobierz dane użytkownika z serwera
+                const userRes = await fetch(`${API_BASE_URL}/api/user/me`, {
+                    headers: { 'Authorization': `Bearer ${result.token}` }
+                });
+                const userData = await userRes.json();
+                console.log('[IntroManager] handleLogin: user data loaded, calling onLoginSuccess');
+                this.onLoginSuccess(userData, result.token, userData.thumbnail);
             } else {
-                if (msg) msg.textContent = data.message || "Błąd logowania";
+                console.warn('[IntroManager] handleLogin: login failed:', result.error);
+                if (msg) msg.textContent = result.error || "Błąd logowania";
             }
         } catch (e) {
-            console.error(e);
+            console.error('[IntroManager] handleLogin: exception:', e);
             if (msg) msg.textContent = "Błąd połączenia";
         }
     }
@@ -724,23 +729,13 @@ export class IntroManager {
         const selectedSkinData = skinsList[this.currentSkinIndex];
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: uInput.value,
-                    password: pInput.value,
-                    starterSkin: selectedSkinData
-                })
-            });
-
-            const data = await res.json();
-            if (res.ok) {
+            const result = await this.accountService.register(uInput.value, pInput.value);
+            if (result.success) {
                 alert("Konto utworzone! Możesz się zalogować.");
                 this.showScreen('login');
                 this.zoomOut();
             } else {
-                alert("Błąd: " + data.message);
+                alert("Błąd: " + result.error);
             }
         } catch (e) {
             alert("Błąd sieci: " + e.message);

@@ -228,7 +228,8 @@ class BlockStarPlanetGame {
   }
 
   async startGame(user, token, thumbnail) {
-      console.log("Start gry dla:", user.username);
+      console.log("[BlockStarPlanetGame] startGame called for user:", user.username);
+      console.log("[BlockStarPlanetGame] Token:", token?.substring(0, 20) + '...');
       
       // Zatrzymaj muzykę logowania i włącz nexus
       this.audioManager.stopLoginMusic();
@@ -253,9 +254,11 @@ class BlockStarPlanetGame {
 
       // Załaduj katalog w tle
       try {
+          console.log("[BlockStarPlanetGame] Initializing CatalogManager...");
           await this.catalogManager.initialize();
+          console.log("[BlockStarPlanetGame] CatalogManager initialized successfully");
       } catch (error) {
-          console.error('Failed to load catalog:', error);
+          console.error('[BlockStarPlanetGame] Failed to load catalog:', error);
       }
 
       if (user) {

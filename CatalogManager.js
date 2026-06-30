@@ -18,7 +18,7 @@ export class CatalogManager {
       console.log('[CatalogManager] Initializing...');
       this.catalog = await this.catalogService.getCatalog();
       this.ready = true;
-      console.log('[CatalogManager] Catalog loaded:', this.catalog.items?.length || 0, 'items');
+      console.log('[CatalogManager] Catalog loaded successfully: %d items', this.catalog.items?.length || 0);
       return true;
     } catch (error) {
       console.error('[CatalogManager] Initialization failed:', error);
