@@ -320,9 +320,20 @@ export class IntroManager {
         initializeComponentStyles(); // Initialize global component styles
         
         const authLayer = document.getElementById('auth-layer');
-        if (authLayer && authLayer.innerHTML.trim() === '') {
-            authLayer.innerHTML = ENHANCED_AUTH_HTML;
-        } else if (!authLayer) {
+        if (authLayer) {
+            authLayer.style.display = 'block';
+            authLayer.style.position = 'fixed';
+            authLayer.style.top = '0';
+            authLayer.style.left = '0';
+            authLayer.style.width = '100%';
+            authLayer.style.height = '100%';
+            authLayer.style.zIndex = '100001';
+            authLayer.style.pointerEvents = 'auto';
+
+            if (authLayer.innerHTML.trim() === '') {
+                authLayer.innerHTML = ENHANCED_AUTH_HTML;
+            }
+        } else {
             const newAuthLayer = document.createElement('div');
             newAuthLayer.id = 'auth-layer';
             newAuthLayer.style.display = 'block';
@@ -331,7 +342,8 @@ export class IntroManager {
             newAuthLayer.style.left = '0';
             newAuthLayer.style.width = '100%';
             newAuthLayer.style.height = '100%';
-            newAuthLayer.style.zIndex = '99997';
+            newAuthLayer.style.zIndex = '100001';
+            newAuthLayer.style.pointerEvents = 'auto';
             document.body.appendChild(newAuthLayer);
             newAuthLayer.innerHTML = ENHANCED_AUTH_HTML;
         }
@@ -351,7 +363,22 @@ export class IntroManager {
         
         // ZMIANA: Pokazujemy główny kontener ekranu logowania dopiero w tym momencie
         const authScreen = document.getElementById('auth-screen');
-        if (authScreen) authScreen.style.display = 'flex';
+        const authLayer = document.getElementById('auth-layer');
+        if (authLayer) {
+            authLayer.style.display = 'block';
+            authLayer.style.position = 'fixed';
+            authLayer.style.top = '0';
+            authLayer.style.left = '0';
+            authLayer.style.width = '100%';
+            authLayer.style.height = '100%';
+            authLayer.style.zIndex = '100001';
+            authLayer.style.pointerEvents = 'auto';
+        }
+        if (authScreen) {
+            authScreen.style.display = 'flex';
+            authScreen.style.pointerEvents = 'auto';
+            authScreen.style.zIndex = '100002';
+        }
 
         this.refreshElements();
         this.setupScene();
